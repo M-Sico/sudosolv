@@ -4,7 +4,7 @@
     <SchemaVersion>2.0</SchemaVersion>
     <ProjectGuid>6f09a5a4-4799-4a18-a614-d7da66d7de64</ProjectGuid>
     <ProjectHome>.</ProjectHome>
-    <StartupFile>sudosolv.py</StartupFile>
+    <StartupFile>main.py</StartupFile>
     <SearchPath>
     </SearchPath>
     <WorkingDirectory>.</WorkingDirectory>
@@ -23,6 +23,7 @@
     <EnableUnmanagedDebugging>false</EnableUnmanagedDebugging>
   </PropertyGroup>
   <ItemGroup>
+    <Compile Include="main.py" />
     <Compile Include="sudosolv.py" />
   </ItemGroup>
   <ItemGroup>

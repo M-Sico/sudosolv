@@ -83,6 +83,10 @@ class Tile:
 			self.probability = [number]
 		return self
 
+	def addNumber(self, number):
+		self.number = number
+		self.removePencil(number)
+
 	def __str__(self):
 		return self.number
 
@@ -105,10 +109,12 @@ class Tile:
 		return len(self.pencil) > len(rhs.pencil)
 
 class Board:
-	def __init__(self, tile_list = None, string_list = None, *args):
+	def __init__(self, tile_list = None, string_list = None, string = None, *args):
 		self.table = []
 		if tile_list != None:
 			self.table = tile_list
+		elif string != None:
+			string_list = [string.strip()[index:index + 9].strip() for index in range(0,81,9)]
 		elif string_list != None:
 			for row in range(len(string_list)):
 				self.table.append([Tile(number, row, col) for number, col in zip(string_list[row], range(9))])
@@ -116,11 +122,12 @@ class Board:
 			for arg in args:
 				self.table.append(arg)
 		self.probability_list = []
+		self.backtrack = [0]
+		self.iterations = [0]
 
 	def printBoard(self, _clear = False, row = -1, col = -1):
 		"""
 		Prints the board!
-		Time complexity: O(n^2)
 		"""
 		if _clear:
 			clear()
@@ -145,7 +152,6 @@ class Board:
 	def printPencil(self, _clear = False, row = -1, col = -1):
 		"""
 		Prints the board!
-		Time complexity: O(n^2)
 		"""
 		if _clear:
 			clear()
@@ -176,6 +182,10 @@ class Board:
 
 	def generateFriendPencil(self):
 		while (True):
+			index = 0
+			self.iterations[0] += 1
+			if (self.backtrack != 0):
+				self.backtrack[0] += 1
 			flag = False
 			self.probability_list = []
 			for row in range(9):
@@ -236,7 +246,8 @@ class Board:
 					# reset undo_stack
 					self.table[row][col].undo_stack = []
 					# Probability
-					self.probability_list.append([self.table[row][col].probability, weakref.proxy(self.table[row][col])])
+					self.probability_list.append([self.table[row][col].probability, weakref.proxy(self.table[row][col]), index])
+					index += 1
 				if flag == True:
 						break
 			if flag == True:
@@ -288,14 +299,16 @@ class Board:
 	def hiddenQuads(self, row, col):
 		pass
 
-	def __recurSolve(self, backtrack = [0], iter = [0], flag = False, number = None):
-		#self.printBoard(True)
-		#self.printPencil(False)
-		#print(f"Iterations: {iter[0]} | Backtracks: {backtrack[0]}")
-		iter[0] += 1
-		for probability, tile in sorted(self.probability_list):	# Sort list of tiles by priority and loop
+	def __recurSolve(self, flag = False, number = None):
+		# self.printBoard(True)
+		# self.printPencil(False)
+		clrear()
+		print(f"Iterations: {self.iterations[0]} | Backtracks: {self.backtrack[0]}")
+		self.iterations[0] += 1
+		for probability, tile, index in sorted(self.probability_list):	# Sort list of tiles by priority and loop
 			# Pre-exit condition
 			if tile != 0: # If lowest probability tile is not empty, exit
+				flag = True
 				return
 			for number in tile.pencil:	# For all pencil in tile, else go to next tile
 				# If pencil is not in friend's number, set number as pencil (guess algorithm)
@@ -305,39 +318,39 @@ class Board:
 					# Remove number from friends' pencil
 					for friend in tile.friends:
 						friend.removePencil(number)
-					# Set lowest probability to 100
-					tile.updateProbability(100)
+					self.probability_list[index][0] = [100]
 					# Iterate
-					self.__recurSolve(backtrack, iter, flag, number)
+					self.__recurSolve(flag, number)
 					# If you find a solution ####### I DUNNO IF NECESSARY
 					if flag:
 						break
 					# Backtrack, reset tile, probability, and friend pencil
 					tile.number = "0"
-					tile.updateProbability()
+					#tile.updateProbability()
+					self.probability_list[index][0] = [len(tile.pencil)]
 					for friend in tile.friends:
 						friend.undo(number)
 			# Exit 2
 			# If there is no pencil left and no number chosen, backtrack
 			if tile == "0":
-				backtrack[0] += 1
+				self.backtrack[0] += 1
 				return
 		# Exit condition I don't know if this is Necessary
-		if 0 not in [tile.number for probability, tile in self.probability_list]: 
-			return True, backtrack, iter
-		return False, backtrack, iter
+		if 0 not in [tile.number for probability, tile in self.probability_list]:
+			return
+		return
 
 	def solve(self):
 		"""
 		Creates a pencil, then solves recursively
 		"""
 		self.generateFriendPencil()
-		backtrack = iter = [0]
-		self.__recurSolve(backtrack, iter)
-		return backtrack, iter
+		# Solve by guessing
+		self.__recurSolve()
+		print("Backtrack:", self.backtrack[0], "| Iterations:", self.iterations[0])
 
 # Current average solve time: 189 ms (1000 tests)
-# New average solve time: 89 ms (1000 tests)
+# New average solve time: 10 ms (1000 tests)
 #000105000140000670080002400063070010900000003010090520007200080026000035000409000
 s_easy = "672145398145983672389762451263574819958621743714398526597236184426817935831459267"
 u_easy = [
@@ -393,18 +406,18 @@ unsolvable = [
 
 if __name__ == "__main__":
 	BOARD = u_medium
+	SOLUTION = s_medium
 
 	TIME = time()*1000
 	board1 = Board(string_list = BOARD)
-	backtrack, iter = board1.solve()
+	board1.solve()
 	print(board1)
-	print(s_medium)
+	print(SOLUTION)
 	board1.printBoard()
 	print(time()*1000 - TIME)
-	print("Backtrack:", backtrack, "| Iterations:", iter)
 	
 	#time_list = []
-	#for round in range(1):
+	#for round in range(1000):
 	#	TIME = time()*1000
 	#	board1 = Board(string_list = BOARD)
 	#	board1.solve()
